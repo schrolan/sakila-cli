@@ -26,7 +26,7 @@ const searchActors = async () => {
             
             menuPrompt()
     } catch(err){
-
+        throw new Error(err)
     }
 
     }
@@ -44,18 +44,61 @@ const addActor = async () => {
             message: 'What is their last name?'
         }
     ])
-    const [results] = await connection.promise().query(
-        `INSERT INTO actor (first_name, last_name)
-        VALUES (?,?)`,
-        [answers.first_name, answers.last_name]
-    )
-    console.table(results)
-
-    menuPrompt()
+    try {
+        const [results] = await connection.promise().query(
+            `INSERT INTO actor (first_name, last_name)
+            VALUES (?,?)`,
+            [answers.first_name, answers.last_name]
+        )
+        console.table(results)
+    
+        menuPrompt()
+    } catch(err) {
+        throw new Error(err)
+    }
     }
 
 const updateActor = async () => {
+    const answers = await inquirer.prompt([
+        {
+            type: 'number',
+            name: 'actor_id',
+            message: 'Which actor do you want to update? (ID)'
+        },
+        {
+            type: 'input',
+            name: 'first_name',
+            message: 'Update the first name',
+            default: async (sessionAnswers) => {
+                const [results] = await connection.promise().query(
+                    'SELECT first_name FROM actor WHERE actor_id = ?',
+                    [sessionAnswers.actor_id]
+                )
+                return results[0].first_name
+            }
+        },
+        {
+            type: 'input',
+            name: 'last_name',
+            message: 'Update the last name',
+            default: async (sessionAnswers) => {
+                const [results] = await connection.promise().query(
+                    'SELECT last_name FROM actor WHERE actor_id = ?',
+                    [sessionAnswers.actor_id]
+                )
+                return results[0].first_name
+            }
+        }
+    ])
 
+    const [results] = await connection.promise().query(
+        `UPDATE actor
+         SET first_name = ?, last_name = ?
+         WHERE actor_id =?`,
+        [answers.first_name, answers.last_name, answers.actor_id]
+    )
+    console.log('Actor updated!')
+    menuPrompt()
     }
 
 const menuPrompt = async () => {
